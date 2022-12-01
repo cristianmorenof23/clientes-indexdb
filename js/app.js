@@ -1,44 +1,14 @@
-
-
 (function() {
     let DB;
-    const listadoClientes = document.querySelector('#listado-clientes');
 
     document.addEventListener('DOMContentLoaded', () => {
         crearDB();
-
-
-        if(window.indexedDB.open('crm', 1)) {
-            obtenerClientes()
-        }
-
-        listadoClientes.addEventListener('click', eliminarRegistro)
     
+        if(window.indexedDB.open('crm', 1)) {
+            obtenerClientes();
+        }
         
     });
-
-    function eliminarRegistro(e){
-        if(e.target.classList.contains('eliminar')){
-            const idEliminar = Number(e.target.dataset.cliente)
-
-            const confirmar = confirm('¿Deseas eliminar este cliente?')
-
-            if(confirmar) {
-                const transaction = DB.transaction(['crm'], 'readwrite')
-                const objectStore = transaction.objectStore('crm')
-                objectStore.delete(idEliminar)
-
-                transaction.oncomplete = () => {
-                    
-
-                    e.target.parentElement.parentElement.remove()
-                }
-                transaction.onerror = () => {
-                    
-                }
-            }
-        }
-    }
     
     // Código de IndexedDB
     function crearDB() {
@@ -79,28 +49,38 @@
     
     }
 
-    function obtenerClientes() {
-        const abrirConexion = window.indexedDB.open('crm', 1);
 
-        abrirConexion.onerror = () => {
+    function obtenerClientes() {
+
+        let abrirConexion = window.indexedDB.open('crm', 1);
+
+        // si hay un error, lanzarlo
+        abrirConexion.onerror = function() {
             console.log('Hubo un error');
         };
-
-        abrirConexion.onsuccess = () => {
+    
+        // si todo esta bien, asignar a database el resultado
+        abrirConexion.onsuccess = function() {
+            // guardamos el resultado
             DB = abrirConexion.result;
 
             const objectStore = DB.transaction('crm').objectStore('crm');
 
-            objectStore.openCursor().onsuccess = function (e){
+
+            // retorna un objeto request o petición, 
+            objectStore.openCursor().onsuccess = function(e) {
+                 // cursor se va a ubicar en el registro indicado para accede ra los datos
                 const cursor = e.target.result;
 
-                if(cursor){
-                    const { nombre, empresa, email, telefono, id} = cursor.value;
+                //  console.log(e.target);
+    
+                if(cursor) {
+                    const { nombre, empresa, email, telefono, id } = cursor.value;
+                    
+                    const listadoClientes = document.querySelector('#listado-clientes');
+                    listadoClientes.innerHTML += `
 
-                
-
-                    listadoClientes.innerHTML += ` 
-                    <tr>
+                        <tr>
                             <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-200">
                                 <p class="text-sm leading-5 font-medium text-gray-700 text-lg  font-bold"> ${nombre} </p>
                                 <p class="text-sm leading-10 text-gray-700"> ${email} </p>
@@ -113,18 +93,23 @@
                             </td>
                             <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-200 text-sm leading-5">
                                 <a href="editar-cliente.html?id=${id}" class="text-teal-600 hover:text-teal-900 mr-5">Editar</a>
-                                <a href="#" data-cliente="${id}" class="text-red-600 hover:text-red-900 eliminar">Eliminar</a>
+                                <a href="#" data-cliente="${id}" class="text-red-600 hover:text-red-900">Eliminar</a>
                             </td>
                         </tr>
                     `;
-
+        
                     cursor.continue();
                 } else {
-                    console.log('No hay mas registros...');
+                    //  console.log('llegamos al final...');
                 }
-            }
-        }
+            };
+
+
+
+        };
 
 
     }
+    
+
 })();
